@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
@@ -14,6 +15,9 @@ public class Driver {
 		BufferedReader buffer=new BufferedReader(f);
 		Scanner input=new Scanner(buffer);
 		
+		String verboseSwitch=args[1];
+		boolean verbose=false;
+		if(verboseSwitch.equals("true")) {verbose=true;}
 		int num=input.nextInt(); //num= number of processes
 		ArrayList<process> bucket=new ArrayList<process>();
 		
@@ -49,22 +53,37 @@ public class Driver {
 			bucket.get(i).index=i;
 		}
 		
+		
 		System.out.print("The sorted input was: "+num);
 		for(process p: bucket) {
 			System.out.print(" ("+p.A+" "+p.B+" "+p.C+" "+p.M+") ");
 		}
 		System.out.println();
+	
+		String pathFinder=System.getProperty("user.dir");
+		pathFinder=pathFinder+"/random-numbers";
+		File randomNum=new File(pathFinder);
 		
-	//	new FCFS();
-	//	FCFS.run(bucket, true);
 		
+		System.out.println();
+		System.out.println("Now running with FCFS: ");
+		new FCFS();
+		FCFS.run(bucket, verbose,randomNum);
+			
+		System.out.println();
+		System.out.println("Now running with Round Robbin: ");
+		new RR();
+		RR.run(bucket, verbose,randomNum);
 		
-		
+		System.out.println();
+		System.out.println("Now running with LCFS: ");
 		new LCFS();
-		LCFS.run(bucket, true);
+		LCFS.run(bucket, verbose,randomNum);
 		
-		
-		
+		System.out.println();
+		System.out.println("Now running with HPRN: ");
+		new HPRN();
+		HPRN.run(bucket, verbose,randomNum);
 		
 		input.close();
 	}
@@ -85,7 +104,6 @@ public class Driver {
 		
 	
 		Collections.sort(bucket, new myComparator());
-		
 	
 	}
 }

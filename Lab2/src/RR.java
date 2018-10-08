@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
 
-public class LCFS {
-	public static void run(ArrayList<process> bucket, boolean verbose,File rn) throws FileNotFoundException {
+public class RR {
+	public static void run(ArrayList<process> bucket, boolean verbose, File rn) throws FileNotFoundException {
 		Scanner rng=new Scanner(rn);
 		
 		ArrayList<process> unstartedList=new ArrayList<process>();
@@ -23,13 +23,13 @@ public class LCFS {
 		double cpuCounter=0;
 		double ioCounter=0;
 		process runningP=null;
-		
+		int quantum=0;
 		while(finished<bucket.size()) {
 			
 			if(verbose) {
 				System.out.print("Before cycle: "+time);
 				for(process p:bucket) {
-					System.out.print("\t Process "+p.index+": ");
+					System.out.print(" Process "+p.index+": ");
 					if(p.status==0) {System.out.print("unstarted");}
 					if(p.status==1) {System.out.print("ready");}
 					if(p.status==2) {System.out.print("running");}
@@ -57,7 +57,7 @@ public class LCFS {
 			
 			if(runningP!=null) {
 				cpuCounter++;
-	
+				quantum++;				//increase quantum at the beginning of each run
 				runningP.untilBurst--;
 				runningP.remC--;
 				if(runningP.untilBurst==0) {
@@ -69,9 +69,18 @@ public class LCFS {
 						runningP.status=3;
 						ioList.add(runningP);
 					}
-					
+					quantum=0;				//refresh quantum if a process switches itself off
 					runningP=null;
+				}else if(quantum==2) {	//if hits a preemption, where runningP's untilBurst time is not exhausted
+					temp.add(runningP);
+					runningP.arrivalT=time;
+					runningP.status=1;
+					runningP=null;
+					quantum=0;			//refresh quantum if a process is preempted
+					
 				}
+				
+			
 			}
 			
 			if(!unstartedList.isEmpty()) {
@@ -85,8 +94,8 @@ public class LCFS {
 				}
 			}
 			
-			reverseSortProcess(temp);		//here is the only difference from FCFS
-			waitingList.addAll(0,temp);
+			stdSortProcess(temp);
+			waitingList.addAll(temp);
 			ioList.removeAll(temp);
 			unstartedList.removeAll(temp);
 			temp.clear();
@@ -95,11 +104,13 @@ public class LCFS {
 				if(!waitingList.isEmpty()) {
 					runningP=waitingList.get(0);
 					runningP.status=2;
-					int b=randomOS(runningP.B,rng);
-					if(b>runningP.remC){
-						runningP.giveBurst(runningP.remC);
-					}else {
-						runningP.giveBurst(b);
+					if(runningP.untilBurst==0) {		//if the process was stopped by preemption, no need to determine burst
+						int b=randomOS(runningP.B,rng);
+						if(b>runningP.remC){
+							runningP.giveBurst(runningP.remC);
+						}else {
+							runningP.giveBurst(b);
+						}
 					}
 					waitingList.remove(runningP);
 				}
@@ -115,7 +126,7 @@ public class LCFS {
 			
 		}
 		System.out.println();
-		System.out.println("The scheduler's algorithm: Last Come First Serve");
+		System.out.println("The scheduler's algorithm: Round Robbin");
 		time--;
 		double taCounter=0;
 		double	wtCounter=0;
@@ -148,14 +159,12 @@ public class LCFS {
 	}
 
 
-
-	
-	private static void reverseSortProcess(ArrayList<process> bucket) {		//whichever comes later gets the higher priority
+	private static void stdSortProcess(ArrayList<process> bucket) {
 		class myComparator implements Comparator<process>{
 
 			public int compare(process p1, process p2) {
 				if(p1.arrivalT!=p2.arrivalT) {
-					return p2.arrivalT-p1.arrivalT;
+					return p1.arrivalT-p2.arrivalT;
 				}else {
 					return p1.index-p2.index;
 				}

@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
 
-public class LCFS {
-	public static void run(ArrayList<process> bucket, boolean verbose,File rn) throws FileNotFoundException {
+public class HPRN {
+	public static void run(ArrayList<process> bucket, boolean verbose, File rn) throws FileNotFoundException {
 		Scanner rng=new Scanner(rn);
 		
 		ArrayList<process> unstartedList=new ArrayList<process>();
@@ -24,12 +24,12 @@ public class LCFS {
 		double ioCounter=0;
 		process runningP=null;
 		
-		while(finished<bucket.size()) {
+		while(finished<bucket.size() ) {
 			
 			if(verbose) {
 				System.out.print("Before cycle: "+time);
 				for(process p:bucket) {
-					System.out.print("\t Process "+p.index+": ");
+					System.out.print(" Process "+p.index+": ");
 					if(p.status==0) {System.out.print("unstarted");}
 					if(p.status==1) {System.out.print("ready");}
 					if(p.status==2) {System.out.print("running");}
@@ -85,10 +85,11 @@ public class LCFS {
 				}
 			}
 			
-			reverseSortProcess(temp);		//here is the only difference from FCFS
-			waitingList.addAll(0,temp);
+			
+			waitingList.addAll(temp);
 			ioList.removeAll(temp);
 			unstartedList.removeAll(temp);
+			prSortProcess(waitingList);
 			temp.clear();
 			
 			if(runningP==null) {
@@ -113,9 +114,10 @@ public class LCFS {
 			
 			time++;
 			
+			updatePR(bucket,unstartedList,time);	//update processes' penalty ration at the end of the cycle
 		}
 		System.out.println();
-		System.out.println("The scheduler's algorithm: Last Come First Serve");
+		System.out.println("The scheduler's algorithm: HPRN");
 		time--;
 		double taCounter=0;
 		double	wtCounter=0;
@@ -147,15 +149,25 @@ public class LCFS {
 		return(1+(rng.nextInt()%b));
 	}
 
-
-
-	
-	private static void reverseSortProcess(ArrayList<process> bucket) {		//whichever comes later gets the higher priority
+	private static void updatePR(ArrayList<process> bucket,ArrayList<process> unstartedList,int time) {
+		for(process p:bucket) {
+			if(!unstartedList.contains(p)) {					//no need to update unstarted processes
+				double accC=(double) (p.C-p.remC);
+				if(accC<=1) {accC=1;}
+				double T=(double)(time-p.A);
+				p.r=T/accC;
+			}
+		}
+	}
+	private static void prSortProcess(ArrayList<process> bucket) {			//penalty ration sort
 		class myComparator implements Comparator<process>{
 
 			public int compare(process p1, process p2) {
-				if(p1.arrivalT!=p2.arrivalT) {
-					return p2.arrivalT-p1.arrivalT;
+				if(p1.r!=p2.r) {
+					if(p1.r>p2.r) {return -1;}
+					else {return 1;}
+				}else if(p1.arrivalT!=p2.arrivalT){
+					return p1.arrivalT-p2.arrivalT;
 				}else {
 					return p1.index-p2.index;
 				}

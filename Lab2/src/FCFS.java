@@ -7,8 +7,7 @@ import java.util.Scanner;
 
 public class FCFS {
 	
-	public static void run(ArrayList<process> bucket, boolean verbose) throws FileNotFoundException {
-		File rn=new File("/home/haku/Desktop/random-numbers");
+	public static void run(ArrayList<process> bucket, boolean verbose,File rn) throws FileNotFoundException {
 		Scanner rng=new Scanner(rn);
 		
 		ArrayList<process> unstartedList=new ArrayList<process>();
@@ -43,7 +42,7 @@ public class FCFS {
 			}
 
 		
-			if(!ioList.isEmpty()){
+			if(!ioList.isEmpty()){		//do IO before cpu since reversing the order allows a process to do 2 things in 1 cycle
 				ioCounter++;
 				for(process p:ioList) {
 					p.ioFor--;
@@ -57,26 +56,26 @@ public class FCFS {
 				}
 			}
 			
-			if(runningP!=null) {
+			if(runningP!=null) {		//run
 				cpuCounter++;
 	
 				runningP.untilBurst--;
 				runningP.remC--;
-				if(runningP.untilBurst==0) {
+				if(runningP.untilBurst==0) {	//if a process shouldn't be running anymore
 					
-					if(runningP.remC==0) {
+					if(runningP.remC==0) {		//if the remaining cpu time hits 0, it terminates
 						runningP.status=4;
 						finished++;
-					}else {
+					}else {						//if the remaining cpu time is still not 0 yet, do IO
 						runningP.status=3;
 						ioList.add(runningP);
 					}
 					
-					runningP=null;
+					runningP=null;				
 				}
 			}
 			
-			if(!unstartedList.isEmpty()) {
+			if(!unstartedList.isEmpty()) {		//check every unstarted processes every time
 				for(process p:unstartedList) {
 					
 					if(p.A==time) {
@@ -87,13 +86,13 @@ public class FCFS {
 				}
 			}
 			
-			stdSortProcess(temp);
+			stdSortProcess(temp);		//temp is our carrier variable here
 			waitingList.addAll(temp);
 			ioList.removeAll(temp);
 			unstartedList.removeAll(temp);
-			temp.clear();
+			temp.clear();				//clean up cuz' more is coming
 			
-			if(runningP==null) {
+			if(runningP==null) {				//choose a process to run from the ready list
 				if(!waitingList.isEmpty()) {
 					runningP=waitingList.get(0);
 					runningP.status=2;
@@ -107,7 +106,7 @@ public class FCFS {
 				}
 			}
 			
-			for(process p: waitingList) {
+			for(process p: waitingList) {		//updating waiting time
 				p.waitingT++;
 			}
 			
@@ -116,6 +115,8 @@ public class FCFS {
 			time++;
 			
 		}
+		System.out.println();
+		System.out.println("The scheduler's algorithm: First Come First Serve");
 		time--;
 		double taCounter=0;
 		double	wtCounter=0;
@@ -130,6 +131,7 @@ public class FCFS {
 		wtCounter=wtCounter/finished;
 		ioCounter=ioCounter/time;
 		cpuCounter=cpuCounter/time;
+		System.out.println();
 		System.out.println("Summary Data: ");
 		System.out.println("\t Finishing time: "+time);
 		System.out.println("\t CPU Util.: "+cpuCounter);

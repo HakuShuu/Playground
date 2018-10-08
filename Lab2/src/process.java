@@ -19,6 +19,7 @@ public class process {
 	int finishT;
 	int taT;
 	
+	double r;
 	
 	public process(int a, int b, int c, int d, int e) {
 		this.initialize();
@@ -30,14 +31,13 @@ public class process {
 		arrivalT=A;
 		remC=C;
 		
-		
 	
 	}
 	
 	public void initialize() {
 		lastBurst=0;
 		untilBurst=0;
-		arrivalT=0;
+		arrivalT=A;
 		waitingT=0;
 		ioT=0;
 		status=0;
@@ -45,6 +45,7 @@ public class process {
 		finishT=0;
 		taT=0;
 		remC=C;
+		r=0;
 	}
 	
 	public void giveBurst(int a) {
