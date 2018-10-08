@@ -10,14 +10,20 @@ import java.util.Scanner;
 public class Driver {
 
 	public static void main(String[] args) throws FileNotFoundException {
-		String fileName=args[0];
+		
+		String fileName=null;
+		boolean verbose=false;
+		if(args.length>1) {
+			fileName=args[1];
+			String verboseSwitch=args[0];	
+			if(verboseSwitch.equals("-verbose")) {verbose=true;}
+		}else {
+			fileName=args[0];
+		}
+		
 		FileReader f=new FileReader(fileName);
 		BufferedReader buffer=new BufferedReader(f);
 		Scanner input=new Scanner(buffer);
-		
-		String verboseSwitch=args[1];
-		boolean verbose=false;
-		if(verboseSwitch.equals("true")) {verbose=true;}
 		int num=input.nextInt(); //num= number of processes
 		ArrayList<process> bucket=new ArrayList<process>();
 		
