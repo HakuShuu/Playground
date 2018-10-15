@@ -28,13 +28,14 @@ public class LCFS {
 			
 			if(verbose) {
 				System.out.print("Before cycle: "+time);
+				if(time<10) {System.out.print("\t");}
 				for(process p:bucket) {
-					System.out.print("\t Process "+p.index+": ");
-					if(p.status==0) {System.out.print("unstarted");}
-					if(p.status==1) {System.out.print("ready");}
-					if(p.status==2) {System.out.print("running");}
-					if(p.status==3) {System.out.print("blocked");}
-					if(p.status==4) {System.out.print("terminated");}
+					//System.out.print(" Process "+p.index+": ");
+					if(p.status==0) {System.out.print("\t unstarted: 0");}
+					if(p.status==1) {System.out.print("\t ready: 0");}
+					if(p.status==2) {System.out.print("\t running: "+p.untilBurst);}
+					if(p.status==3) {System.out.print("\t blocked: "+p.ioFor);}
+					if(p.status==4) {System.out.print("\t terminated: 0");}
 					
 				}
 				System.out.println();

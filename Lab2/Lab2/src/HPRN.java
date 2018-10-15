@@ -28,19 +28,19 @@ public class HPRN {
 			
 			if(verbose) {
 				System.out.print("Before cycle: "+time);
+				if(time<10) {System.out.print("\t");}
 				for(process p:bucket) {
-					System.out.print(" Process "+p.index+": ");
-					if(p.status==0) {System.out.print("unstarted");}
-					if(p.status==1) {System.out.print("ready");}
-					if(p.status==2) {System.out.print("running");}
-					if(p.status==3) {System.out.print("blocked");}
-					if(p.status==4) {System.out.print("terminated");}
+					//System.out.print(" Process "+p.index+": ");
+					if(p.status==0) {System.out.print("\t unstarted: 0");}
+					if(p.status==1) {System.out.print("\t ready: 0");}
+					if(p.status==2) {System.out.print("\t running: "+p.untilBurst);}
+					if(p.status==3) {System.out.print("\t blocked: "+p.ioFor);}
+					if(p.status==4) {System.out.print("\t terminated: 0");}
 					
 				}
 				System.out.println();
 			}
-
-		
+	
 			if(!ioList.isEmpty()){
 				ioCounter++;
 				for(process p:ioList) {
@@ -88,7 +88,7 @@ public class HPRN {
 			
 			waitingList.addAll(temp);
 			ioList.removeAll(temp);
-			unstartedList.removeAll(temp);
+			unstartedList.removeAll(temp);	
 			prSortProcess(waitingList);
 			temp.clear();
 			
@@ -111,10 +111,10 @@ public class HPRN {
 			}
 			
 			
-			
+				
 			time++;
+			updatePR(bucket,unstartedList,time);	
 			
-			updatePR(bucket,unstartedList,time);	//update processes' penalty ration at the end of the cycle
 		}
 		System.out.println();
 		System.out.println("The scheduler's algorithm: HPRN");
@@ -156,18 +156,21 @@ public class HPRN {
 				if(accC<=1) {accC=1;}
 				double T=(double)(time-p.A);
 				p.r=T/accC;
+
+
 			}
 		}
+	
 	}
-	private static void prSortProcess(ArrayList<process> bucket) {			//penalty ration sort
+	private static void prSortProcess(ArrayList<process> bucket) {			//penalty ratio sort
 		class myComparator implements Comparator<process>{
 
 			public int compare(process p1, process p2) {
 				if(p1.r!=p2.r) {
 					if(p1.r>p2.r) {return -1;}
 					else {return 1;}
-				}else if(p1.arrivalT!=p2.arrivalT){
-					return p1.arrivalT-p2.arrivalT;
+				//}else if(p1.arrivalT!=p2.arrivalT){
+				//	return p1.arrivalT-p2.arrivalT;
 				}else {
 					return p1.index-p2.index;
 				}

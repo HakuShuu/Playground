@@ -10,7 +10,6 @@ import java.util.Scanner;
 public class Driver {
 
 	public static void main(String[] args) throws FileNotFoundException {
-		
 		String fileName=null;
 		boolean verbose=false;
 		if(args.length>1) {
