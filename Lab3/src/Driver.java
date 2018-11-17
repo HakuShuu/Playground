@@ -15,13 +15,13 @@ public class Driver {
 		int NT=Input.nextInt();
 		int NR=Input.nextInt();
 		ArrayList<Integer> resources=new ArrayList<Integer>();
-		ArrayList<Integer> occupied=new ArrayList<Integer>();
 		HashMap<Integer,task> tMap=new HashMap<Integer,task>();
 		
+		resources.add(-42);
 		for (int i=0;i<NR;i++) {
 			resources.add(Input.nextInt());
-			occupied.add(0);
 		}
+
 		for(int i=1;i<=NT;i++) {
 			task t=new task(i);
 			tMap.put(i, t);
@@ -53,8 +53,15 @@ public class Driver {
 				activity nAct=new activity(4,i1,i2,i3);
 				thisT.addAct(nAct);
 			}
+			
+			
 		}
-		
+for(int i=1;i<=NT;i++) {
+	task T=tMap.get(i);
+	T.reset();
+	//T.printMe();
+}
+		Optimistic.run(resources, tMap, false);
 		
 		
 		Input.close();
