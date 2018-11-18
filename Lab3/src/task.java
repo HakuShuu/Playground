@@ -1,28 +1,34 @@
-import java.util.HashMap;
+import java.util.ArrayList;
 
 public class task {
 	int index;
 	activity actHeader=new activity();
-	int NOA=-1;//number of activity
+	int NOA=-1;//number of activity, assuming terminate doesn't count
 	
 	activity actPointer;	//I store the activities as a linked list
-	HashMap<Integer,Integer> claim=new HashMap<Integer,Integer>();//the first field stores the type of resource, the second field stores number
-	HashMap<Integer,Integer> possession=new HashMap<Integer,Integer>();
+	ArrayList<Integer> claim=new ArrayList<Integer>();
+	ArrayList<Integer> possession=new ArrayList<Integer>();
 	int status=0;	//0 for unstarted, 1 for running,2 for blocked, 3 for computing, 4 for finished, 5 for aborted
 	int computeCnt=0;
 	int blockedTime=0;
 	int runningT=0;
-	boolean skip=false;
+	boolean skip=false;//I made this bit to prevent the task being unblocked and processed during the same cycle
 	boolean countDown=false;
 	
 
 	
-public task(int i) {
+public task(int i, int NR) {
 	index=i;	
 	actHeader.next=actHeader;
 	actPointer=actHeader;
 	status=0;
 	
+	claim.add(0,-42);
+	possession.add(0,-42);
+	for(int t=1;t<=NR;t++) {
+		claim.add(t,0);
+		possession.add(t,0);
+	}
 }
 
 public void addAct(activity a) {
@@ -65,7 +71,7 @@ public int[] process() {
 	return feedback;
 
 }
-public void printMe() {
+public void printMe() {	//for debugging only
 	System.out.println("Task index: "+index+" NOA: "+NOA);
 	activity ptr=actHeader.next;
 	while(ptr!=null) {
@@ -74,21 +80,22 @@ public void printMe() {
 	}
 }
 public void updateClaim(int t, int u) {
-	claim.put(t, u);
+	claim.add(t, u);
 }
-
-public void assign(int t, int u) {
-	if (!possession.containsKey(t)) {
-		possession.put(t, u);
-	}else {
-		possession.put(t, possession.get(t)+u);
+public void clearArray(ArrayList<Integer> AL) {
+	int N=AL.size()-1;
+	for(int i=1;i<=N;i++) {
+		AL.add(i, 0);
 	}
+}
+public void assign(int t, int u) {
+	int current=possession.get(t);
+	possession.set(t, current+u);
 }
 public void release(int t, int u) {
-	possession.put(t, possession.get(t)-u);
-	if(possession.get(t)==0) {
-		possession.remove(t);
-	}
+	int current=possession.get(t);
+	possession.set(t, current-u);
+	
 }
 public void blockMe() {
 	status=2;
@@ -101,10 +108,10 @@ public void computeFor(int t) {
 	computeCnt=t;
 	status=3;
 }
-public void countDown() {
+public void countDown() {	//if the activity follows a "compute+terminate" pattern, call this function
 	countDown=true;
 }
-public boolean computing() {
+public boolean computing() {	//the returned boolean notifies the manager whether this task is about to terminate
 	computeCnt--;
 
 	if(computeCnt==0) {
@@ -123,7 +130,7 @@ public void terminate(int t) {
 public void abort() {
 	status=5;
 }
-public void reset() {
+public void reset() {	//clean up after each run
 	status=0;
 	computeCnt=0;
 	blockedTime=0;
@@ -131,10 +138,10 @@ public void reset() {
 	skip=false;
 	countDown=false;
 	actPointer=actHeader.next;
-	claim.clear();
-	possession.clear();
+	this.clearArray(possession);
+	this.clearArray(claim);
 }
-public void nextAct() {
+public void nextAct() {	//only the manager can decide whether the task keeps on processing its activities
 	actPointer=actPointer.next;
 }
 }

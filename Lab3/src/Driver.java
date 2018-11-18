@@ -12,18 +12,18 @@ public class Driver {
 		FileReader f=new FileReader(FileName);
 		BufferedReader bf=new BufferedReader(f);
 		Scanner Input=new Scanner(bf);
-		int NT=Input.nextInt();
-		int NR=Input.nextInt();
+		int NT=Input.nextInt();//number of tasks
+		int NR=Input.nextInt();//number of resources
 		ArrayList<Integer> resources=new ArrayList<Integer>();
 		HashMap<Integer,task> tMap=new HashMap<Integer,task>();
 		
-		resources.add(-42);
+		resources.add(-42);//adjust my arrayList so everything is 1-based, which aligns well with the input
 		for (int i=0;i<NR;i++) {
 			resources.add(Input.nextInt());
 		}
 
 		for(int i=1;i<=NT;i++) {
-			task t=new task(i);
+			task t=new task(i,NR);
 			tMap.put(i, t);
 		}
 		
@@ -56,13 +56,13 @@ public class Driver {
 			
 			
 		}
-for(int i=1;i<=NT;i++) {
-	task T=tMap.get(i);
-	T.reset();
-	//T.printMe();
-}
+		for(int i=1;i<=NT;i++) {
+			task T=tMap.get(i);
+			T.reset();
+		}
 		Optimistic.run(resources, tMap, false);
-		
+		System.out.println();
+		Banker.run(resources, tMap, false);
 		
 		Input.close();
 	}

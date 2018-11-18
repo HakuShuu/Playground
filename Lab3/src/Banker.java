@@ -1,8 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
-public class Optimistic {
+public class Banker {
 	public static void run(ArrayList<Integer> resource, HashMap<Integer,task> tMap, boolean verbose) {
 		int time=0;
 		int terminatedT=0;
@@ -17,7 +16,6 @@ public class Optimistic {
 		ArrayList<task> unblockCache=new ArrayList<task>();
 		ArrayList<Integer> releaseQ=new  ArrayList<Integer>();
 		releaseQ.add(0,-42);
-		
 		for(int i=1;i<=NR;i++) {
 			releaseQ.add(i,0);
 		}
@@ -34,14 +32,13 @@ public class Optimistic {
 				System.out.println();
 			}
 			
-			if(!blockedT.isEmpty()) {	//processing blocked tasks
+			if(!blockedT.isEmpty()) {
 				if(verbose) {System.out.println("\t Processing blocked tasks ");}
-				for(task T: blockedT) {
-					
+				for(task T: blockedT) {	
 					T.blockedTime++;
 					rType=T.actPointer.field2;
 					rUnit=T.actPointer.field3;
-					if(optGrant(rType,rUnit,available)) {
+					if(bankerGrant(rType,rUnit,T,tMap,available)) {	//can we unblock a task?
 					
 						T.assign(rType,rUnit);
 						available.set(rType,available.get(rType)-rUnit);
@@ -55,7 +52,7 @@ public class Optimistic {
 						}
 					}else {
 						if(verbose) {
-							System.out.println("\t Task: "+T.index+"'s request still cannot be granted");
+							System.out.println("\t Task: "+T.index+"'s request still cannot be granted: ("+rType+","+rUnit+")" );
 						}
 					}
 				}
@@ -66,7 +63,7 @@ public class Optimistic {
 			if(verbose && (NT-terminatedT)!=blockedT.size()) {System.out.println("\t Processing unblocked tasks");}
 			for(int i=1;i<=NT;i++) {
 				task T=tMap.get(i);
-				if(T.status==3) {
+				if(T.status==3) {	//let a task compute
 					if(T.computing() &&T.computeCnt==1) {
 						if(verbose) {System.out.println("\t Task: "+T.index+" finishes the last cycle of computation and terminates ");}
 						T.terminate(time+1);
@@ -77,10 +74,20 @@ public class Optimistic {
 					}
 				}
 				if(T.status==5|| T.status==4 ||T.status==2) {continue;}
-				if(T.skip==true) {T.skip=false;continue;}
+				if(T.skip==true) {T.skip=false;continue;}//only the tasks that just became unblocked will be skipped once
 				
 				feedback=T.process();
-				if(feedback[0]==0) {
+				if(feedback[0]==0) {	//this signals a claim
+					if(feedback[2]>resource.get(feedback[1])) {
+						if(verbose) {
+							System.out.println("\t Task: "+T.index+" 's claim: ("+feedback[1]+","+feedback[2]+") exceeds the amount of resource and is thus aborted");
+						}
+						releaseAll(T,releaseQ);
+						T.abort();
+						terminatedT++;
+						continue;
+					}
+					T.updateClaim(feedback[1], feedback[2]);
 					T.nextAct();
 					if(verbose) {
 						System.out.println("\t Task: "+T.index+" has initiated a claim: ("+feedback[1]+","+feedback[2]+") ");
@@ -90,7 +97,18 @@ public class Optimistic {
 					rType=feedback[1];
 					rUnit=feedback[2];
 					
-					if(optGrant(rType,rUnit,available)) {
+					if((rUnit+T.possession.get(rType))>T.claim.get(rType)) {	//request exceeds claim, abort task
+						if(verbose) {
+							System.out.println("\t Task: "+T.index+" 's request: ("+rType+","+rUnit+") exceeds its claim and is thus aborted");
+						}
+						
+						releaseAll(T,releaseQ);
+						T.abort();
+						terminatedT++;
+						continue;
+					}
+					
+					if(bankerGrant(rType,rUnit,T,tMap,available)) {
 					
 						T.assign(rType,rUnit);
 						available.set(rType,available.get(rType)-rUnit);
@@ -104,7 +122,7 @@ public class Optimistic {
 						T.blockMe();
 						
 						if(verbose) {
-							System.out.println("\t Task: "+T.index+"'s request cannot be granted and is blocked.");
+							System.out.println("\t Task: "+T.index+"'s request: ("+rType+","+rUnit+") cannot be granted and is blocked.");
 						}
 					}
 				}else if(feedback[0]==2 || feedback[0]==24) {	//this signals a release, or a release+terminate
@@ -147,47 +165,7 @@ public class Optimistic {
 			}
 			
 			
-			if(blockedT.size()==(NT-terminatedT) && checkLock(blockedT,available,releaseQ)) { //this represents a deadlock
-				if(verbose) {System.out.println("\t Deadlock detected!");}
-				boolean flow=false;
-				task victim;
-				while(!flow) {	
-					
-					for(int k=1;k<=NT;k++) {
-						victim=tMap.get(k);
-						if(!blockedT.contains(victim)) {continue;}
-						rType=victim.actPointer.field2;
-						rUnit=victim.actPointer.field3;
-
-						if(!stillLocked(rType,rUnit,releaseQ,available)) {	//if killing one task is enough, continue		
-							
-							flow=true;
-							
-							if(verbose) {
-								System.out.println("\t Post abortion, task "+victim.index+"'s request can be granted: ("+rType+","+rUnit+"), deadlock resolved");
-							}
-							
-						}else {//if killing one task is not enough, seek the next victim
-							releaseAll(victim,releaseQ,NR);
-						
-							victim.abort();
-							terminatedT++;
-							unblockCache.add(victim);
-					
-							if(verbose) {
-								System.out.println("\t Task "+victim.index+" has released its resources and is aborted");
-							}
-						}
-					}
-						
-				
-					
-				}
-			}
-			blockedT.removeAll(unblockCache);
-			unblockCache.clear();
-			
-			int returned=0;
+			int returned=0;				//returning all released resources at the end of a cycle 
 			for(int i=1;i<=NR;i++) {
 				returned=available.get(i)+releaseQ.get(i);
 				available.set(i, returned);
@@ -199,7 +177,7 @@ public class Optimistic {
 			if(verbose) {System.out.println();}
 		}
 		
-		System.out.println("All tasks have terminated under the optimistic manager: ");
+		System.out.println("All tasks have terminated under the banker: ");
 		double d=0;
 		int f1=0;
 		int f2=0;
@@ -219,44 +197,90 @@ public class Optimistic {
 		System.out.println("\t Total: "+f1+" "+f2+" "+ 100*(double)f2/(double)f1+"%");
 	}
 	
-public static boolean optGrant(int t, int u,ArrayList<Integer> available) {
-	if(available.get(t)>=u) {
-		return true;
-	}else {
-		return false;
-	}
-}
-public static void releaseAll(task T, ArrayList<Integer> q,int NR) {	//inconsequential subroutines
+
+public static void releaseAll(task T, ArrayList<Integer> q) {
+	int NR=q.size()-1;
 	for(int type=1;type<=NR;type++) {
 		pushReleaseQ(type,T.possession.get(type),q);
 	}
 	T.clearArray(T.possession);
 }
-public static void pushReleaseQ(int t, int u, ArrayList<Integer> q) {//inconsequential subroutines
+public static void pushReleaseQ(int t, int u, ArrayList<Integer> q) {	//release resource only at the end of a cycle
 	q.set(t, q.get(t)+u);
 }
-public static void clearArray(ArrayList<Integer> a) {//inconsequential subroutines
+public static void clearArray(ArrayList<Integer> a) {
 	for(int i=0;i<a.size();i++) {
 		a.set(i,0);
 	}
 	a.set(0, -42);
 }
-public static boolean stillLocked(int type, int requested, ArrayList<Integer> release, ArrayList<Integer> available) {
-	int a=available.get(type)+release.get(type);
-	return (a<requested);
-}
 
-public static boolean checkLock(ArrayList<task> BT, ArrayList<Integer> AV,ArrayList<Integer> RQ) {	//simple deadlock detecting algo
-	if(BT.size()==0) {return false;}
-	for(task t: BT) {
-		int type=t.actPointer.field2;
-		int unit=t.actPointer.field3;
-		if(AV.get(type)+RQ.get(type)>=unit) {
-			return false;
+public static boolean bankerGrant(int type, int unit,task T, HashMap<Integer,task> tMap, ArrayList<Integer> available ) {	
+
+	if(unit>available.get(type)) {return false;}
+	ArrayList<Integer> A=new ArrayList<Integer>();
+	A.addAll(available);
+	A.set(type, A.get(type)-unit);
+	
+	T.assign(type, unit);
+	
+	
+	ArrayList<task> candidates=new ArrayList<task>();
+	
+	for(int i=1;i<=tMap.size();i++) {
+		task t=tMap.get(i);
+		if(t.status==1 || t.status==3 || (t.index==T.index)) {	//dump all unblocked tasks and this task into the stewing pot
+			candidates.add(t);
 		}
 	}
-	return true;
+	
+	boolean result=recurCheck(candidates,A);
+	T.release(type, unit);
+	return result;
+}
+public static boolean recurCheck(ArrayList<task> C,ArrayList<Integer> A) {	//recursive subroutine to verify safety
+
+	if(C.size()==0) {	//when there is no task, of course the system is safe
+		return true;
+	}
+
+	boolean hit=false;
+
+	task finisher;
+	int NR= A.size()-1;
+	int maxAmount=0;
+	boolean temp=true;
+	
+	for(int i=0;i<C.size();i++) {
+	
+		finisher=C.get(i);
+		temp=true;
+		
+		for(int t=1;t<=NR;t++) {
+			maxAmount=finisher.claim.get(t)-finisher.possession.get(t);
+			if(maxAmount>A.get(t)) {
+				temp=false;				//if a task has unsatisfiable request, it can't be the first to terminate, go to the next
+				break;
+			}
+		}
+		
+		if(temp) {
+			hit=true;
+			for(int t=1;t<=NR;t++) {
+				A.set(t, A.get(t)+finisher.possession.get(t));
+			}
+			C.remove(finisher);	//if a task can be guaranteed to finish, let it release and finish so we can check the rest
+			break;
+		}
+	}
+	
+	if(hit) {
+		return(recurCheck(C,A));
+	}else{
+		return false;
+	}
+}
 }
 
-}
+
 
