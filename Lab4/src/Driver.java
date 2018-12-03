@@ -19,7 +19,12 @@ public class Driver {
 		J=Integer.parseInt(args[3]);
 		N=Integer.parseInt(args[4]);
 		R=args[5];
-		boolean verbose= Integer.parseInt(args[6])==1 ? true:false;
+		boolean verbose;
+		if(args.length==7) {
+			verbose= Integer.parseInt(args[6])==1 ? true:false;	//verbose output trigger
+		}else {
+			verbose=false;
+		}
 		
 		System.out.println("The machine size is: "+M);
 		System.out.println("The page size is: "+P);
@@ -45,9 +50,9 @@ public class Driver {
 		BufferedReader br=new BufferedReader(fr);
 		Scanner RNG=new Scanner(br);
 		
-		frameTable fTable=new frameTable(M/P);
+		frameTable fTable=new frameTable(M/P);	
 		
-		ArrayList<process> pList=new ArrayList<process>();
+		ArrayList<process> pList=new ArrayList<process>();	//granted this implementation of processes seems dumb and cumbersome
 		process p1;
 		process p2;
 		process p3;
@@ -85,25 +90,27 @@ public class Driver {
 		}
 		
 		int q=3;
-		int finishedP=0;
-		int time=1;
+		int finishedP=0;	//finished process counter
+		int time=1;			//odd enough that time is 1-based in Gottlieb's sample output
 		process runningP=pList.get(0);
 		int intPointer;
-		frame fPointer;
+		frame fPointer;		//these two are just carrier variables 
 		
 		while(finishedP<pList.size() ) {
 			if(verbose) {System.out.print("At Time "+time+", process "+runningP.index+" references word "+ runningP.curW+" (page "+runningP.curP+")");}
 			
-			intPointer=fTable.findHit(runningP,time);
+			intPointer=fTable.findHit(runningP,time);	//is this a hit?
 			
 			if(intPointer!=-1) {		//found a hit
 				if(verbose) {System.out.print(" and found a hit at frame "+ intPointer+" holding its page "+runningP.curP);}
 			}else {						//found a fault
 				if(verbose) {System.out.print(" and spawned a fault, ");}
 				
-				fPointer=fTable.findFree();
+				runningP.updateFault();
 				
-				if(fPointer!=null) {		//but there is a free frame!
+				fPointer=fTable.findFree();	//is there a free frame?
+				
+				if(fPointer!=null) {		//there is one!
 					if(verbose) {System.out.print("but a free frame "+fPointer.index +" has been found and used.");}
 					
 					fPointer.inhabit(runningP, time);
@@ -112,12 +119,12 @@ public class Driver {
 					
 					if(verbose) {System.out.print("the manager evicts frame "+fPointer.index +" holding page "+fPointer.pageOfTenant+" of process "+fPointer.tenant.index);}
 					
-					fPointer.evict(time);
-					fPointer.inhabit(runningP, time);
+					fPointer.evict(time);	//RIP
+					fPointer.inhabit(runningP, time);	//and welcome the new dweller
 				}
 			}
 			
-			runningP.remRef--;
+			runningP.remRef--;			//one less reference to make
 			runningP.nextRef(RNG);
 			
 			q--;
@@ -127,7 +134,7 @@ public class Driver {
 				q=0;
 			}
 			
-			if(q==0 && finishedP<pList.size()) {
+			if(q==0 && finishedP<pList.size()) {	//if the scheduler should move onto the next process
 				runningP=pList.get(runningP.index%pList.size());
 				while(runningP.finished) {
 					runningP=pList.get(runningP.index%pList.size());

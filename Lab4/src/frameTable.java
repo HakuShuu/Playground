@@ -5,7 +5,7 @@ public class frameTable {
 	int size;
 	ArrayList<frame> fList;
 	frame victim;
-	boolean full;
+	boolean full;		//this filed exists only for the sake of detecting free frames
 	
 	public frameTable(int n) {
 		fList=new ArrayList<frame>();
@@ -20,12 +20,11 @@ public class frameTable {
 	public int findHit(process p,int t) {
 		for(frame f: fList) {
 			if(f.tenant==null) {continue;}
-			else if(f.tenant.index==p.index && f.pageOfTenant==p.curP) {
+			else if(f.tenant.index==p.index && f.pageOfTenant==p.curP) {	//checks process and its current page
 				f.recentUse=t;
-				return f.index;
+				return f.index;			//return the index upon hit, -1 upon miss
 				}
 		}	
-		p.numFault++;
 		return -1;
 	}
 	public frame findFree() {
@@ -38,7 +37,7 @@ public class frameTable {
 				target=f;
 			}
 		}
-		if (target==null) {full=true;}
+		if (target==null) {full=true;}	//might as well mark it full since it can never go back to a non-full state 
 		return target;
 	}
 	

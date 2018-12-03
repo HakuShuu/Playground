@@ -4,8 +4,8 @@ public class process {
 	int index;
 	int ref;
 	
-	int curW;
-	int curP;
+	int curW;	//current word
+	int curP;	//current page
 	int	remRef;	//remaining references
 	boolean finished;
 	
@@ -13,7 +13,7 @@ public class process {
 	int totalResidency;
 	int numFault;
 	
-	double A;
+	double A;		
 	double B;
 	double C;
 	

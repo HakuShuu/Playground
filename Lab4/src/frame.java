@@ -3,7 +3,7 @@ public class frame {
 	int index;
 	
 	boolean free;
-	int recentUse;
+	int recentUse;	//for checking lifo
 	int loadTime;	//the last time when this frame is loaded
 	process tenant;
 	int pageOfTenant;
